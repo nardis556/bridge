@@ -143,21 +143,21 @@ async function checkExitStatus() {
             actionMessage.textContent = "Exit your wallet to begin the withdrawal process.";
             updateGuideSteps(2);
         } else {
-            // Check localStorage for when exit was initiated
-            const exitStartTime = localStorage.getItem(`exitTime_${userAddress}`);
-            let timeRemaining;
+            // Get exit time from localStorage, or save it if not present
+            let exitTime = localStorage.getItem(`exitTime_${userAddress}`);
 
-            if (exitStartTime) {
-                const withdrawAvailableAt = parseInt(exitStartTime) + propagationPeriodSeconds;
-                timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
+            if (!exitTime) {
+                // First time seeing this exit - save current time
+                exitTime = Math.floor(Date.now() / 1000);
+                localStorage.setItem(`exitTime_${userAddress}`, exitTime.toString());
             } else {
-                // Fallback: assume just started
-                timeRemaining = propagationPeriodSeconds;
+                exitTime = parseInt(exitTime);
             }
 
+            const withdrawAvailableAt = exitTime + propagationPeriodSeconds;
+            const timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
+
             if (timeRemaining > 0) {
-                const exitTime = exitStartTime ? parseInt(exitStartTime) : Math.floor(Date.now() / 1000);
-                const withdrawAvailableAt = exitTime + propagationPeriodSeconds;
 
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value pending">Exit Pending</span></p>
@@ -173,7 +173,7 @@ async function checkExitStatus() {
             } else {
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value ready">Ready to Withdraw</span></p>
-                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(effectiveBlockTimestamp)}</span></p>
+                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(exitTime)}</span></p>
                 `;
                 exitBtn.classList.add("hidden");
                 withdrawBtn.classList.remove("hidden");
