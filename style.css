@@ -192,6 +192,12 @@ h2 {
     color: #ef4444;
 }
 
+.status-note {
+    font-size: 0.85rem;
+    color: #a1a1aa;
+    margin-top: 8px;
+}
+
 .action-message {
     margin-top: 12px;
     font-size: 0.9rem;

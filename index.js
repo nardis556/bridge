@@ -143,32 +143,28 @@ async function checkExitStatus() {
             actionMessage.textContent = "Exit your wallet to begin the withdrawal process.";
             updateGuideSteps(2);
         } else {
-            // Get exit time from exitWallet transaction
-            const exitTime = await getExitWalletTimestamp();
-            const withdrawAvailableAt = exitTime + propagationPeriodSeconds;
-            const timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
+            // Wallet has exited - check if withdrawExit is ready
+            const canWithdraw = await checkWithdrawReady();
 
-            if (timeRemaining > 0) {
-                exitStatus.innerHTML = `
-                    <p><span class="status-label">Status:</span> <span class="status-value pending">Exit Pending</span></p>
-                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(exitTime)}</span></p>
-                    <p><span class="status-label">Withdraw Available:</span> <span class="status-value">${formatTimestamp(withdrawAvailableAt)}</span></p>
-                    <p><span class="status-label">Time Remaining:</span> <span class="status-value countdown" id="countdown">${formatDuration(timeRemaining)}</span></p>
-                `;
-                exitBtn.classList.add("hidden");
-                withdrawBtn.classList.add("hidden");
-                actionMessage.textContent = "Please wait for the propagation period to complete.";
-                startCountdown(withdrawAvailableAt);
-                updateGuideSteps(3);
-            } else {
+            if (canWithdraw) {
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value ready">Ready to Withdraw</span></p>
-                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(exitTime)}</span></p>
                 `;
                 exitBtn.classList.add("hidden");
                 withdrawBtn.classList.remove("hidden");
                 actionMessage.textContent = "You can now withdraw your funds.";
                 updateGuideSteps(4);
+                stopWithdrawCheck();
+            } else {
+                exitStatus.innerHTML = `
+                    <p><span class="status-label">Status:</span> <span class="status-value pending">Exit Pending</span></p>
+                    <p class="status-note">Please wait ~1 hour after exiting before withdrawing.</p>
+                `;
+                exitBtn.classList.add("hidden");
+                withdrawBtn.classList.add("hidden");
+                actionMessage.textContent = "Waiting for propagation period...";
+                updateGuideSteps(3);
+                startWithdrawCheck();
             }
         }
     } catch (error) {
@@ -177,59 +173,36 @@ async function checkExitStatus() {
     }
 }
 
-let countdownInterval;
+let withdrawCheckInterval;
 
-// exitWallet() function selector
-const EXIT_WALLET_SELECTOR = "0x33ec4d42";
-
-async function getExitWalletTimestamp() {
+async function checkWithdrawReady() {
     try {
-        // Fetch transactions from explorer API
-        const response = await fetch(
-            `https://xchain-explorer.kuma.bid/api/v2/addresses/${userAddress}/transactions?filter=to%7Cfrom`
-        );
-        const data = await response.json();
-        console.log("Transactions:", data);
-
-        // Find the exitWallet transaction to Exchange contract
-        for (const tx of data.items || []) {
-            console.log("Checking tx:", tx.method, tx.to?.hash);
-            if (
-                tx.to?.hash?.toLowerCase() === EXCHANGE_ADDRESS.toLowerCase() &&
-                tx.method === "exitWallet"
-            ) {
-                const timestamp = Math.floor(new Date(tx.timestamp).getTime() / 1000);
-                console.log("Found exitWallet tx, timestamp:", timestamp, tx.timestamp);
-                return timestamp;
-            }
-        }
-
-        console.log("exitWallet tx not found, using current time");
-        return Math.floor(Date.now() / 1000);
+        // Try to estimate gas for withdrawExit - if it succeeds, withdrawal is ready
+        await exchangeContract.withdrawExit.estimateGas(userAddress);
+        return true;
     } catch (error) {
-        console.error("Error fetching exit transaction:", error);
-        return Math.floor(Date.now() / 1000);
+        // If it reverts, propagation period hasn't passed yet
+        return false;
     }
 }
 
-function startCountdown(targetTimestamp) {
-    if (countdownInterval) clearInterval(countdownInterval);
+function startWithdrawCheck() {
+    if (withdrawCheckInterval) return; // Already running
 
-    countdownInterval = setInterval(() => {
-        const now = Math.floor(Date.now() / 1000);
-        const remaining = targetTimestamp - now;
-
-        if (remaining <= 0) {
-            clearInterval(countdownInterval);
-            checkExitStatus();
-            return;
+    withdrawCheckInterval = setInterval(async () => {
+        const canWithdraw = await checkWithdrawReady();
+        if (canWithdraw) {
+            stopWithdrawCheck();
+            checkExitStatus(); // Refresh the UI
         }
+    }, 10000); // Check every 10 seconds
+}
 
-        const countdownEl = document.getElementById("countdown");
-        if (countdownEl) {
-            countdownEl.textContent = formatDuration(remaining);
-        }
-    }, 1000);
+function stopWithdrawCheck() {
+    if (withdrawCheckInterval) {
+        clearInterval(withdrawCheckInterval);
+        withdrawCheckInterval = null;
+    }
 }
 
 async function exitWallet() {
