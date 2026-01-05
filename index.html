@@ -15,6 +15,11 @@
             <p id="walletAddress" class="wallet-address"></p>
         </div>
 
+        <div id="balanceSection" class="card hidden">
+            <h2>USDC Balance</h2>
+            <p id="usdcBalance" class="balance">0.00 USDC</p>
+        </div>
+
         <div id="statusSection" class="card hidden">
             <h2>Exit Status</h2>
             <div id="exitStatus" class="status-box">
@@ -29,6 +34,29 @@
                 <button id="withdrawBtn" class="btn btn-success hidden">Withdraw Funds</button>
             </div>
             <p id="actionMessage" class="action-message"></p>
+        </div>
+
+        <div id="bridgeSection" class="card hidden">
+            <h2>Bridge to Another Chain</h2>
+            <div class="form-group">
+                <label for="destChain">Destination Chain</label>
+                <select id="destChain" class="select">
+                    <option value="berachain">Berachain</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="bridgeAmount">Amount (USDC)</label>
+                <div class="input-group">
+                    <input type="text" id="bridgeAmount" class="input" placeholder="0.00">
+                    <button id="maxBtn" class="btn btn-small">MAX</button>
+                </div>
+            </div>
+            <div id="feeEstimate" class="fee-box hidden">
+                <p><span class="status-label">Bridge Fee:</span> <span id="bridgeFee">-</span> ETH</p>
+                <p><span class="status-label">You'll Receive:</span> <span id="receiveAmount">-</span> USDC</p>
+            </div>
+            <button id="quoteBtn" class="btn btn-secondary">Get Quote</button>
+            <button id="bridgeBtn" class="btn btn-primary hidden">Bridge</button>
         </div>
 
         <div id="txStatus" class="tx-status hidden"></div>

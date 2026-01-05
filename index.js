@@ -1,21 +1,42 @@
 let provider;
 let signer;
-let contract;
+let exchangeContract;
+let oftContract;
 let userAddress;
+let usdcBalance = 0n;
+let currentQuote = null;
 
+// DOM elements
 const connectBtn = document.getElementById("connectBtn");
 const walletAddressEl = document.getElementById("walletAddress");
+const balanceSection = document.getElementById("balanceSection");
+const usdcBalanceEl = document.getElementById("usdcBalance");
 const statusSection = document.getElementById("statusSection");
 const exitStatus = document.getElementById("exitStatus");
 const actionsSection = document.getElementById("actionsSection");
 const exitBtn = document.getElementById("exitBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
 const actionMessage = document.getElementById("actionMessage");
+const bridgeSection = document.getElementById("bridgeSection");
+const destChainSelect = document.getElementById("destChain");
+const bridgeAmountInput = document.getElementById("bridgeAmount");
+const maxBtn = document.getElementById("maxBtn");
+const quoteBtn = document.getElementById("quoteBtn");
+const bridgeBtn = document.getElementById("bridgeBtn");
+const feeEstimate = document.getElementById("feeEstimate");
+const bridgeFeeEl = document.getElementById("bridgeFee");
+const receiveAmountEl = document.getElementById("receiveAmount");
 const txStatus = document.getElementById("txStatus");
 
+// Event listeners
 connectBtn.addEventListener("click", connectWallet);
 exitBtn.addEventListener("click", exitWallet);
 withdrawBtn.addEventListener("click", withdrawExit);
+maxBtn.addEventListener("click", setMaxAmount);
+quoteBtn.addEventListener("click", getQuote);
+bridgeBtn.addEventListener("click", executeBridge);
+destChainSelect.addEventListener("change", resetQuote);
+bridgeAmountInput.addEventListener("input", resetQuote);
 
 async function connectWallet() {
     if (!window.ethereum) {
@@ -27,10 +48,8 @@ async function connectWallet() {
         connectBtn.textContent = "Connecting...";
         connectBtn.disabled = true;
 
-        // Request accounts first
         await window.ethereum.request({ method: "eth_requestAccounts" });
 
-        // Switch to correct network
         const chainIdHex = "0x" + CHAIN_ID.toString(16);
         try {
             await window.ethereum.request({
@@ -38,7 +57,6 @@ async function connectWallet() {
                 params: [{ chainId: chainIdHex }]
             });
         } catch (switchError) {
-            // Chain not added, add it
             if (switchError.code === 4902) {
                 await window.ethereum.request({
                     method: "wallet_addEthereumChain",
@@ -58,15 +76,18 @@ async function connectWallet() {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
-        contract = new ethers.Contract(EXCHANGE_ADDRESS, EXCHANGE_ABI, signer);
+        exchangeContract = new ethers.Contract(EXCHANGE_ADDRESS, EXCHANGE_ABI, signer);
+        oftContract = new ethers.Contract(OFT_ADDRESS, OFT_ABI, signer);
 
         connectBtn.textContent = "Connected";
         walletAddressEl.textContent = userAddress;
 
+        balanceSection.classList.remove("hidden");
         statusSection.classList.remove("hidden");
         actionsSection.classList.remove("hidden");
+        bridgeSection.classList.remove("hidden");
 
-        await checkExitStatus();
+        await Promise.all([checkExitStatus(), updateBalance()]);
     } catch (error) {
         console.error("Connection error:", error);
         connectBtn.textContent = "Connect Wallet";
@@ -75,11 +96,21 @@ async function connectWallet() {
     }
 }
 
+async function updateBalance() {
+    try {
+        usdcBalance = await oftContract.balanceOf(userAddress);
+        const formatted = ethers.formatUnits(usdcBalance, 6);
+        usdcBalanceEl.textContent = parseFloat(formatted).toFixed(2) + " USDC";
+    } catch (error) {
+        console.error("Error fetching balance:", error);
+    }
+}
+
 async function checkExitStatus() {
     try {
         const [exitInfo, propagationPeriod] = await Promise.all([
-            contract.walletExits(userAddress),
-            contract.chainPropagationPeriodInS()
+            exchangeContract.walletExits(userAddress),
+            exchangeContract.chainPropagationPeriodInS()
         ]);
 
         const exists = exitInfo.exists;
@@ -109,7 +140,6 @@ async function checkExitStatus() {
                 exitBtn.classList.add("hidden");
                 withdrawBtn.classList.add("hidden");
                 actionMessage.textContent = "Please wait for the propagation period to complete.";
-
                 startCountdown(withdrawAvailableAt);
             } else {
                 exitStatus.innerHTML = `
@@ -154,7 +184,7 @@ async function exitWallet() {
         exitBtn.disabled = true;
         showTxStatus("Submitting exit transaction...", "pending");
 
-        const tx = await contract.exitWallet();
+        const tx = await exchangeContract.exitWallet();
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
@@ -174,18 +204,123 @@ async function withdrawExit() {
         withdrawBtn.disabled = true;
         showTxStatus("Submitting withdrawal transaction...", "pending");
 
-        const tx = await contract.withdrawExit(userAddress);
+        const tx = await exchangeContract.withdrawExit(userAddress);
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
-        showTxStatus("Withdrawal successful!", "success");
+        showTxStatus("Withdrawal successful! Your USDC is now in your wallet.", "success");
 
-        await checkExitStatus();
+        await Promise.all([checkExitStatus(), updateBalance()]);
     } catch (error) {
         console.error("Withdraw error:", error);
         showTxStatus("Withdrawal failed: " + (error.reason || error.message), "error");
     } finally {
         withdrawBtn.disabled = false;
+    }
+}
+
+function setMaxAmount() {
+    const formatted = ethers.formatUnits(usdcBalance, 6);
+    bridgeAmountInput.value = formatted;
+    resetQuote();
+}
+
+function resetQuote() {
+    currentQuote = null;
+    feeEstimate.classList.add("hidden");
+    bridgeBtn.classList.add("hidden");
+    quoteBtn.classList.remove("hidden");
+}
+
+async function getQuote() {
+    const amountStr = bridgeAmountInput.value;
+    if (!amountStr || parseFloat(amountStr) <= 0) {
+        showTxStatus("Please enter a valid amount", "error");
+        return;
+    }
+
+    const destChain = destChainSelect.value;
+    const endpoint = LZ_ENDPOINTS[destChain];
+
+    try {
+        quoteBtn.disabled = true;
+        quoteBtn.textContent = "Getting quote...";
+
+        const amountLD = ethers.parseUnits(amountStr, 6);
+
+        // Pad address to bytes32
+        const toBytes32 = ethers.zeroPadValue(userAddress, 32);
+
+        // SendParam struct
+        const sendParam = {
+            dstEid: endpoint.id,
+            to: toBytes32,
+            amountLD: amountLD,
+            minAmountLD: amountLD * 99n / 100n, // 1% slippage
+            extraOptions: "0x",
+            composeMsg: "0x",
+            oftCmd: "0x"
+        };
+
+        const [nativeFee, lzTokenFee] = await oftContract.quoteSend(sendParam, false);
+
+        currentQuote = {
+            sendParam,
+            messagingFee: { nativeFee, lzTokenFee }
+        };
+
+        const feeInEth = ethers.formatEther(nativeFee);
+
+        bridgeFeeEl.textContent = parseFloat(feeInEth).toFixed(6);
+        receiveAmountEl.textContent = amountStr; // Same amount (OFT 1:1)
+
+        feeEstimate.classList.remove("hidden");
+        quoteBtn.classList.add("hidden");
+        bridgeBtn.classList.remove("hidden");
+
+        showTxStatus(`Quote ready for ${endpoint.name}`, "success");
+    } catch (error) {
+        console.error("Quote error:", error);
+        showTxStatus("Failed to get quote: " + (error.reason || error.message), "error");
+    } finally {
+        quoteBtn.disabled = false;
+        quoteBtn.textContent = "Get Quote";
+    }
+}
+
+async function executeBridge() {
+    if (!currentQuote) {
+        showTxStatus("Please get a quote first", "error");
+        return;
+    }
+
+    try {
+        bridgeBtn.disabled = true;
+        showTxStatus("Submitting bridge transaction...", "pending");
+
+        const { sendParam, messagingFee } = currentQuote;
+
+        const tx = await oftContract.send(
+            sendParam,
+            messagingFee,
+            userAddress, // refund address
+            { value: messagingFee.nativeFee }
+        );
+
+        showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
+
+        await tx.wait();
+
+        const destChain = destChainSelect.value;
+        showTxStatus(`Bridge to ${LZ_ENDPOINTS[destChain].name} initiated! Funds will arrive shortly.`, "success");
+
+        resetQuote();
+        await updateBalance();
+    } catch (error) {
+        console.error("Bridge error:", error);
+        showTxStatus("Bridge failed: " + (error.reason || error.message), "error");
+    } finally {
+        bridgeBtn.disabled = false;
     }
 }
 
@@ -214,11 +349,7 @@ function formatDuration(seconds) {
     return parts.join(" ");
 }
 
-// Listen for account changes
 if (window.ethereum) {
-    window.ethereum.on("accountsChanged", (accounts) => {
-        if (accounts.length > 0) {
-            window.location.reload();
-        }
-    });
+    window.ethereum.on("accountsChanged", () => window.location.reload());
+    window.ethereum.on("chainChanged", () => window.location.reload());
 }

@@ -67,6 +67,15 @@ h2 {
     background: #2563eb;
 }
 
+.btn-secondary {
+    background: #6b7280;
+    color: #fff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #4b5563;
+}
+
 .btn-warning {
     background: #f59e0b;
     color: #000;
@@ -85,12 +94,25 @@ h2 {
     background: #059669;
 }
 
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: auto;
+}
+
 .wallet-address {
     margin-top: 12px;
     font-family: monospace;
     font-size: 0.9rem;
     color: #a1a1aa;
     word-break: break-all;
+    text-align: center;
+}
+
+.balance {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #10b981;
     text-align: center;
 }
 
@@ -158,6 +180,12 @@ h2 {
     color: #ef4444;
 }
 
+.tx-status.pending {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+}
+
 .hidden {
     display: none;
 }
@@ -175,4 +203,75 @@ h2 {
     font-family: monospace;
     font-size: 1.2rem;
     color: #f59e0b;
+}
+
+/* Form elements */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #a1a1aa;
+}
+
+.select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font-size: 1rem;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.input::placeholder {
+    color: #71717a;
+}
+
+.input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.input-group .input {
+    flex: 1;
+}
+
+.fee-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.fee-box p {
+    margin-bottom: 4px;
+}
+
+.fee-box p:last-child {
+    margin-bottom: 0;
 }
