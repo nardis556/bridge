@@ -153,7 +153,7 @@ async function checkExitStatus() {
                 exitBtn.classList.add("hidden");
                 withdrawBtn.classList.remove("hidden");
                 actionMessage.textContent = "You can now withdraw your funds.";
-                updateGuideSteps(4);
+                updateGuideSteps(4, [5]); // Both withdraw and bridge steps active
                 stopWithdrawCheck();
             } else {
                 exitStatus.innerHTML = `
@@ -394,14 +394,14 @@ if (window.ethereum) {
     window.ethereum.on("chainChanged", () => window.location.reload());
 }
 
-function updateGuideSteps(step) {
+function updateGuideSteps(step, alsoActive = []) {
     currentStep = step;
     for (let i = 1; i <= 5; i++) {
         const stepEl = document.getElementById(`step${i}`);
         stepEl.classList.remove("active", "completed");
         if (i < step) {
             stepEl.classList.add("completed");
-        } else if (i === step) {
+        } else if (i === step || alsoActive.includes(i)) {
             stepEl.classList.add("active");
         }
     }
