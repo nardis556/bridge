@@ -149,7 +149,6 @@ async function checkExitStatus() {
             const timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
 
             if (timeRemaining > 0) {
-
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value pending">Exit Pending</span></p>
                     <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(exitTime)}</span></p>
@@ -190,19 +189,22 @@ async function getExitWalletTimestamp() {
             `https://xchain-explorer.kuma.bid/api/v2/addresses/${userAddress}/transactions?filter=to%7Cfrom`
         );
         const data = await response.json();
+        console.log("Transactions:", data);
 
         // Find the exitWallet transaction to Exchange contract
-        for (const tx of data.items) {
+        for (const tx of data.items || []) {
+            console.log("Checking tx:", tx.method, tx.to?.hash);
             if (
                 tx.to?.hash?.toLowerCase() === EXCHANGE_ADDRESS.toLowerCase() &&
                 tx.method === "exitWallet"
             ) {
-                // Return timestamp in seconds
-                return Math.floor(new Date(tx.timestamp).getTime() / 1000);
+                const timestamp = Math.floor(new Date(tx.timestamp).getTime() / 1000);
+                console.log("Found exitWallet tx, timestamp:", timestamp, tx.timestamp);
+                return timestamp;
             }
         }
 
-        // Fallback to current time if not found
+        console.log("exitWallet tx not found, using current time");
         return Math.floor(Date.now() / 1000);
     } catch (error) {
         console.error("Error fetching exit transaction:", error);
@@ -397,6 +399,9 @@ function formatTimestamp(timestamp) {
 }
 
 function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return "0s";
+
+    seconds = Math.floor(seconds);
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
