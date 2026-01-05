@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bridge</h1>
+
+        <div class="card">
+            <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+            <p id="walletAddress" class="wallet-address"></p>
+        </div>
+
+        <div id="statusSection" class="card hidden">
+            <h2>Exit Status</h2>
+            <div id="exitStatus" class="status-box">
+                <p>Loading...</p>
+            </div>
+        </div>
+
+        <div id="actionsSection" class="card hidden">
+            <h2>Actions</h2>
+            <div id="actionButtons">
+                <button id="exitBtn" class="btn btn-warning hidden">Exit Wallet</button>
+                <button id="withdrawBtn" class="btn btn-success hidden">Withdraw Funds</button>
+            </div>
+            <p id="actionMessage" class="action-message"></p>
+        </div>
+
+        <div id="txStatus" class="tx-status hidden"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="constants.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

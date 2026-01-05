@@ -1,0 +1,178 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    color: #e4e4e7;
+    padding: 20px;
+}
+
+.container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #fff;
+}
+
+h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #a1a1aa;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: #000;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #d97706;
+}
+
+.btn-success {
+    background: #10b981;
+    color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #059669;
+}
+
+.wallet-address {
+    margin-top: 12px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #a1a1aa;
+    word-break: break-all;
+    text-align: center;
+}
+
+.status-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.status-box p {
+    margin-bottom: 8px;
+}
+
+.status-box p:last-child {
+    margin-bottom: 0;
+}
+
+.status-label {
+    color: #71717a;
+    font-size: 0.85rem;
+}
+
+.status-value {
+    color: #fff;
+    font-weight: 500;
+}
+
+.status-value.pending {
+    color: #f59e0b;
+}
+
+.status-value.ready {
+    color: #10b981;
+}
+
+.status-value.not-exited {
+    color: #ef4444;
+}
+
+.action-message {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: #a1a1aa;
+    text-align: center;
+}
+
+.tx-status {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.tx-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #10b981;
+}
+
+.tx-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.hidden {
+    display: none;
+}
+
+#actionButtons {
+    display: flex;
+    gap: 12px;
+}
+
+#actionButtons .btn {
+    flex: 1;
+}
+
+.countdown {
+    font-family: monospace;
+    font-size: 1.2rem;
+    color: #f59e0b;
+}
