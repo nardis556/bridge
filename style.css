@@ -12,9 +12,26 @@ body {
     padding: 20px;
 }
 
-.container {
-    max-width: 500px;
+.layout {
+    max-width: 900px;
     margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    align-items: start;
+}
+
+.main-content {
+    max-width: 500px;
+}
+
+@media (max-width: 768px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+    .guide-panel {
+        order: -1;
+    }
 }
 
 h1 {
@@ -114,6 +131,29 @@ h2 {
     font-weight: 700;
     color: #10b981;
     text-align: center;
+}
+
+.balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.balance-row:last-child {
+    border-bottom: none;
+}
+
+.balance-label {
+    color: #a1a1aa;
+    font-size: 0.95rem;
+}
+
+.balance-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #10b981;
 }
 
 .status-box {
@@ -274,4 +314,79 @@ h2 {
 
 .fee-box p:last-child {
     margin-bottom: 0;
+}
+
+/* Guide Panel */
+.guide-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+    margin-top: 56px; /* Align with first card */
+}
+
+.guide-panel h2 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: #fff;
+}
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    opacity: 0.5;
+    transition: all 0.3s;
+}
+
+.step.active {
+    opacity: 1;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.step.completed {
+    opacity: 0.7;
+}
+
+.step.completed .step-number {
+    background: #10b981;
+}
+
+.step-number {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.step-content h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.step-content p {
+    font-size: 0.75rem;
+    color: #a1a1aa;
+    line-height: 1.4;
 }

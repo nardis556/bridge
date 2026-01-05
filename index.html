@@ -7,59 +7,109 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Bridge</h1>
+    <div class="layout">
+        <div class="main-content">
+            <h1>Bridge</h1>
 
-        <div class="card">
-            <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
-            <p id="walletAddress" class="wallet-address"></p>
-        </div>
-
-        <div id="balanceSection" class="card hidden">
-            <h2>USDC Balance</h2>
-            <p id="usdcBalance" class="balance">0.00 USDC</p>
-        </div>
-
-        <div id="statusSection" class="card hidden">
-            <h2>Exit Status</h2>
-            <div id="exitStatus" class="status-box">
-                <p>Loading...</p>
+            <div class="card">
+                <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+                <p id="walletAddress" class="wallet-address"></p>
             </div>
-        </div>
 
-        <div id="actionsSection" class="card hidden">
-            <h2>Actions</h2>
-            <div id="actionButtons">
-                <button id="exitBtn" class="btn btn-warning hidden">Exit Wallet</button>
-                <button id="withdrawBtn" class="btn btn-success hidden">Withdraw Funds</button>
-            </div>
-            <p id="actionMessage" class="action-message"></p>
-        </div>
-
-        <div id="bridgeSection" class="card hidden">
-            <h2>Bridge to Another Chain</h2>
-            <div class="form-group">
-                <label for="destChain">Destination Chain</label>
-                <select id="destChain" class="select">
-                    <option value="berachain">Berachain</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="bridgeAmount">Amount (USDC)</label>
-                <div class="input-group">
-                    <input type="text" id="bridgeAmount" class="input" placeholder="0.00">
-                    <button id="maxBtn" class="btn btn-small">MAX</button>
+            <div id="balanceSection" class="card hidden">
+                <h2>Balances</h2>
+                <div class="balance-row">
+                    <span class="balance-label">Exchange:</span>
+                    <span id="exchangeBalance" class="balance-value">0.00 USDC</span>
+                </div>
+                <div class="balance-row">
+                    <span class="balance-label">Wallet:</span>
+                    <span id="usdcBalance" class="balance-value">0.00 USDC</span>
                 </div>
             </div>
-            <div id="feeEstimate" class="fee-box hidden">
-                <p><span class="status-label">Bridge Fee:</span> <span id="bridgeFee">-</span> ETH</p>
-                <p><span class="status-label">You'll Receive:</span> <span id="receiveAmount">-</span> USDC</p>
+
+            <div id="statusSection" class="card hidden">
+                <h2>Exit Status</h2>
+                <div id="exitStatus" class="status-box">
+                    <p>Loading...</p>
+                </div>
             </div>
-            <button id="quoteBtn" class="btn btn-secondary">Get Quote</button>
-            <button id="bridgeBtn" class="btn btn-primary hidden">Bridge</button>
+
+            <div id="actionsSection" class="card hidden">
+                <h2>Actions</h2>
+                <div id="actionButtons">
+                    <button id="exitBtn" class="btn btn-warning hidden">Exit Wallet</button>
+                    <button id="withdrawBtn" class="btn btn-success hidden">Withdraw Funds</button>
+                </div>
+                <p id="actionMessage" class="action-message"></p>
+            </div>
+
+            <div id="bridgeSection" class="card hidden">
+                <h2>Bridge to Berachain</h2>
+                <div class="form-group">
+                    <label for="destChain">Destination Chain</label>
+                    <select id="destChain" class="select">
+                        <option value="berachain">Berachain</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="bridgeAmount">Amount (USDC)</label>
+                    <div class="input-group">
+                        <input type="text" id="bridgeAmount" class="input" placeholder="0.000000" inputmode="decimal">
+                        <button id="maxBtn" class="btn btn-small">MAX</button>
+                    </div>
+                </div>
+                <div id="feeEstimate" class="fee-box hidden">
+                    <p><span class="status-label">Bridge Fee:</span> <span id="bridgeFee">-</span> ETH</p>
+                    <p><span class="status-label">You'll Receive:</span> <span id="receiveAmount">-</span> USDC</p>
+                </div>
+                <button id="quoteBtn" class="btn btn-secondary">Get Quote</button>
+                <button id="bridgeBtn" class="btn btn-primary hidden">Bridge</button>
+            </div>
+
+            <div id="txStatus" class="tx-status hidden"></div>
         </div>
 
-        <div id="txStatus" class="tx-status hidden"></div>
+        <div class="guide-panel">
+            <h2>How to Withdraw</h2>
+            <div class="steps">
+                <div class="step" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Connect Wallet</h3>
+                        <p>Connect your wallet</p>
+                    </div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Exit Wallet</h3>
+                        <p>Initiate the exit wallet.</p>
+                    </div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Wait for Propagation</h3>
+                        <p>Wait for the propagation period to complete (1 hour).</p>
+                    </div>
+                </div>
+                <div class="step" id="step4">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Withdraw Exit</h3>
+                        <p>Call withdraw to move your funds from the exchange to your wallet on XChain.</p>
+                    </div>
+                </div>
+                <div class="step" id="step5">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Bridge to Berachain</h3>
+                        <p>Bridge your USDC from XChain to Berachain.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>

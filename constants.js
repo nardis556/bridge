@@ -127,5 +127,24 @@ const EXCHANGE_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            }
+        ],
+        "name": "loadTotalAccountValueFromIndexPrices",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "",
+                "type": "int64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
     }
 ]

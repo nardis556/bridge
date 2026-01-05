@@ -5,12 +5,14 @@ let oftContract;
 let userAddress;
 let usdcBalance = 0n;
 let currentQuote = null;
+let currentStep = 1;
 
 // DOM elements
 const connectBtn = document.getElementById("connectBtn");
 const walletAddressEl = document.getElementById("walletAddress");
 const balanceSection = document.getElementById("balanceSection");
 const usdcBalanceEl = document.getElementById("usdcBalance");
+const exchangeBalanceEl = document.getElementById("exchangeBalance");
 const statusSection = document.getElementById("statusSection");
 const exitStatus = document.getElementById("exitStatus");
 const actionsSection = document.getElementById("actionsSection");
@@ -98,9 +100,23 @@ async function connectWallet() {
 
 async function updateBalance() {
     try {
-        usdcBalance = await oftContract.balanceOf(userAddress);
-        const formatted = ethers.formatUnits(usdcBalance, 6);
-        usdcBalanceEl.textContent = parseFloat(formatted).toFixed(2) + " USDC";
+        const [walletBal, exchangeBal] = await Promise.all([
+            oftContract.balanceOf(userAddress),
+            exchangeContract.loadTotalAccountValueFromIndexPrices(userAddress)
+        ]);
+
+        usdcBalance = walletBal;
+        const walletFormatted = ethers.formatUnits(usdcBalance, 6);
+        usdcBalanceEl.textContent = parseFloat(walletFormatted).toFixed(2) + " USDC";
+
+        // Exchange balance is int64 with 8 decimals
+        const exchangeFormatted = ethers.formatUnits(exchangeBal, 8);
+        exchangeBalanceEl.textContent = parseFloat(exchangeFormatted).toFixed(2) + " USDC";
+
+        // If user has wallet balance and no exchange balance, they're ready to bridge
+        if (usdcBalance > 0n && exchangeBal <= 0n) {
+            updateGuideSteps(5);
+        }
     } catch (error) {
         console.error("Error fetching balance:", error);
     }
@@ -125,15 +141,27 @@ async function checkExitStatus() {
             exitBtn.classList.remove("hidden");
             withdrawBtn.classList.add("hidden");
             actionMessage.textContent = "Exit your wallet to begin the withdrawal process.";
+            updateGuideSteps(2);
         } else {
-            const withdrawAvailableAt = effectiveBlockTimestamp + propagationPeriodSeconds;
-            const now = Math.floor(Date.now() / 1000);
-            const timeRemaining = withdrawAvailableAt - now;
+            // Check localStorage for when exit was initiated
+            const exitStartTime = localStorage.getItem(`exitTime_${userAddress}`);
+            let timeRemaining;
+
+            if (exitStartTime) {
+                const withdrawAvailableAt = parseInt(exitStartTime) + propagationPeriodSeconds;
+                timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
+            } else {
+                // Fallback: assume just started
+                timeRemaining = propagationPeriodSeconds;
+            }
 
             if (timeRemaining > 0) {
+                const exitTime = exitStartTime ? parseInt(exitStartTime) : Math.floor(Date.now() / 1000);
+                const withdrawAvailableAt = exitTime + propagationPeriodSeconds;
+
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value pending">Exit Pending</span></p>
-                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(effectiveBlockTimestamp)}</span></p>
+                    <p><span class="status-label">Exit Time:</span> <span class="status-value">${formatTimestamp(exitTime)}</span></p>
                     <p><span class="status-label">Withdraw Available:</span> <span class="status-value">${formatTimestamp(withdrawAvailableAt)}</span></p>
                     <p><span class="status-label">Time Remaining:</span> <span class="status-value countdown" id="countdown">${formatDuration(timeRemaining)}</span></p>
                 `;
@@ -141,6 +169,7 @@ async function checkExitStatus() {
                 withdrawBtn.classList.add("hidden");
                 actionMessage.textContent = "Please wait for the propagation period to complete.";
                 startCountdown(withdrawAvailableAt);
+                updateGuideSteps(3);
             } else {
                 exitStatus.innerHTML = `
                     <p><span class="status-label">Status:</span> <span class="status-value ready">Ready to Withdraw</span></p>
@@ -149,6 +178,7 @@ async function checkExitStatus() {
                 exitBtn.classList.add("hidden");
                 withdrawBtn.classList.remove("hidden");
                 actionMessage.textContent = "You can now withdraw your funds.";
+                updateGuideSteps(4);
             }
         }
     } catch (error) {
@@ -188,6 +218,10 @@ async function exitWallet() {
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
+
+        // Save exit time to localStorage
+        localStorage.setItem(`exitTime_${userAddress}`, Math.floor(Date.now() / 1000).toString());
+
         showTxStatus("Wallet exit successful!", "success");
 
         await checkExitStatus();
@@ -208,6 +242,10 @@ async function withdrawExit() {
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
+
+        // Clear exit time from localStorage
+        localStorage.removeItem(`exitTime_${userAddress}`);
+
         showTxStatus("Withdrawal successful! Your USDC is now in your wallet.", "success");
 
         await Promise.all([checkExitStatus(), updateBalance()]);
@@ -224,6 +262,17 @@ function setMaxAmount() {
     bridgeAmountInput.value = formatted;
     resetQuote();
 }
+
+// Limit input to 6 decimal places
+bridgeAmountInput.addEventListener("blur", () => {
+    const value = bridgeAmountInput.value;
+    if (value && !isNaN(value)) {
+        const parts = value.split(".");
+        if (parts[1] && parts[1].length > 6) {
+            bridgeAmountInput.value = parseFloat(value).toFixed(6);
+        }
+    }
+});
 
 function resetQuote() {
     currentQuote = null;
@@ -353,3 +402,19 @@ if (window.ethereum) {
     window.ethereum.on("accountsChanged", () => window.location.reload());
     window.ethereum.on("chainChanged", () => window.location.reload());
 }
+
+function updateGuideSteps(step) {
+    currentStep = step;
+    for (let i = 1; i <= 5; i++) {
+        const stepEl = document.getElementById(`step${i}`);
+        stepEl.classList.remove("active", "completed");
+        if (i < step) {
+            stepEl.classList.add("completed");
+        } else if (i === step) {
+            stepEl.classList.add("active");
+        }
+    }
+}
+
+// Initialize step 1 as active
+updateGuideSteps(1);
