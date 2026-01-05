@@ -143,17 +143,8 @@ async function checkExitStatus() {
             actionMessage.textContent = "Exit your wallet to begin the withdrawal process.";
             updateGuideSteps(2);
         } else {
-            // Get exit time from localStorage, or save it if not present
-            let exitTime = localStorage.getItem(`exitTime_${userAddress}`);
-
-            if (!exitTime) {
-                // First time seeing this exit - save current time
-                exitTime = Math.floor(Date.now() / 1000);
-                localStorage.setItem(`exitTime_${userAddress}`, exitTime.toString());
-            } else {
-                exitTime = parseInt(exitTime);
-            }
-
+            // Get exit time from exitWallet transaction
+            const exitTime = await getExitWalletTimestamp();
             const withdrawAvailableAt = exitTime + propagationPeriodSeconds;
             const timeRemaining = withdrawAvailableAt - Math.floor(Date.now() / 1000);
 
@@ -189,6 +180,36 @@ async function checkExitStatus() {
 
 let countdownInterval;
 
+// exitWallet() function selector
+const EXIT_WALLET_SELECTOR = "0x33ec4d42";
+
+async function getExitWalletTimestamp() {
+    try {
+        // Fetch transactions from explorer API
+        const response = await fetch(
+            `https://xchain-explorer.kuma.bid/api/v2/addresses/${userAddress}/transactions?filter=to%7Cfrom`
+        );
+        const data = await response.json();
+
+        // Find the exitWallet transaction to Exchange contract
+        for (const tx of data.items) {
+            if (
+                tx.to?.hash?.toLowerCase() === EXCHANGE_ADDRESS.toLowerCase() &&
+                tx.method === "exitWallet"
+            ) {
+                // Return timestamp in seconds
+                return Math.floor(new Date(tx.timestamp).getTime() / 1000);
+            }
+        }
+
+        // Fallback to current time if not found
+        return Math.floor(Date.now() / 1000);
+    } catch (error) {
+        console.error("Error fetching exit transaction:", error);
+        return Math.floor(Date.now() / 1000);
+    }
+}
+
 function startCountdown(targetTimestamp) {
     if (countdownInterval) clearInterval(countdownInterval);
 
@@ -218,10 +239,6 @@ async function exitWallet() {
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
-
-        // Save exit time to localStorage
-        localStorage.setItem(`exitTime_${userAddress}`, Math.floor(Date.now() / 1000).toString());
-
         showTxStatus("Wallet exit successful!", "success");
 
         await checkExitStatus();
@@ -242,10 +259,6 @@ async function withdrawExit() {
         showTxStatus("Transaction submitted. Waiting for confirmation...", "pending");
 
         await tx.wait();
-
-        // Clear exit time from localStorage
-        localStorage.removeItem(`exitTime_${userAddress}`);
-
         showTxStatus("Withdrawal successful! Your USDC is now in your wallet.", "success");
 
         await Promise.all([checkExitStatus(), updateBalance()]);
